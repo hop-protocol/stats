@@ -53,7 +53,7 @@ body {
     font-size: 3rem;
   }
 }
-@media (max-width: 400px) {
+@media (max-width: 410px) {
   #counter {
     font-size: 2rem;
   }
