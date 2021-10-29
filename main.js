@@ -2,6 +2,9 @@
 function formatVolume (volumes, prices) {
   let amount = 0
   for (const volume of volumes) {
+    if (!enabledTokens[volume.token]) {
+      continue
+    }
     const decimals = tokenDecimals[volume.token]
     const rawAmount = ethers.BigNumber.from(volume.amount)
     const _amount = Number(ethers.utils.formatUnits(rawAmount, decimals)) * prices[volume.token]
@@ -107,6 +110,14 @@ async function updateVolume () {
   }
 
   return volume
+}
+
+const enabledTokens = {
+  USDC: true,
+  USDT: true,
+  DAI: true,
+  MATIC: true,
+  ETH: true,
 }
 
 async function getUsdPrices () {
