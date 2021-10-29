@@ -28,6 +28,10 @@ function formatCurrency (value, token) {
     // currency: 'USD'
   })
 
+  if (token === 'MATIC' || token === 'ETH') {
+    return currencyFormatter.format(value)
+  }
+
   return `$${currencyFormatter.format(value)}`
 }
 
@@ -49,6 +53,35 @@ async function queryFetch (url, query, variables) {
   })
   const jsonRes = await res.json()
   return jsonRes.data
+}
+
+async function fetchDailyVolume (chain, token, startDate, endDate) {
+  const query = `
+    query DailyVolume($token: String, $startDate: Int, $endDate: Int) {
+      dailyVolumes(
+        where: {
+          token: $token,
+          date_gte: $startDate,
+          date_lte: $endDate
+        },
+        orderBy: date,
+        orderDirection: desc,
+        first: 1000
+      ) {
+        id
+        amount
+        token
+        date
+      }
+    }
+  `
+  const url = getUrl(chain)
+  const data = await queryFetch(url, query, {
+    token,
+    startDate,
+    endDate,
+  })
+  return data.dailyVolumes
 }
 
 async function fetchVolume (chain) {
@@ -165,7 +198,84 @@ async function poll () {
   counter.innerText = volume.total.formattedAmount
 }
 
-async function main () {
+function sumAmounts(items) {
+  let sum = ethers.BigNumber.from(0)
+  for (let item of items) {
+    amount = ethers.BigNumber.from(item.amount)
+    sum = sum.add(amount)
+  }
+  return sum
+}
+
+function nearestDate (dates, target) {
+  if (!target) target = Date.now()
+  else if (target instanceof Date) target = target.getTime()
+
+  var nearest = Infinity
+  var winner = -1
+
+  dates.forEach(function (date, index) {
+    if (date instanceof Date) date = date.getTime()
+    var distance = Math.abs(date - target)
+    if (distance < nearest) {
+      nearest = distance
+      winner = index
+    }
+  })
+
+  return winner
+}
+
+function getPriceHistory(name) {
+  const url = `https://api.coingecko.com/api/v3/coins/${name}/market_chart?vs_currency=usd&days=30&interval=daily`
+  return fetch(url)
+    .then(res => res.json())
+    .then(json => json.prices)
+}
+
+async function logDailyVolumes() {
+  const pricesArr = await Promise.all([
+    getPriceHistory('ethereum'),
+    getPriceHistory('matic-network')
+  ])
+  const prices = {
+    ETH: pricesArr[0],
+    MATIC: pricesArr[1]
+  }
+
+  const tokens = ['USDC', 'USDT', 'DAI', 'MATIC', 'ETH']
+  const chains = ['polygon', 'xdai', 'arbitrum', 'optimism']
+  const days = [1, 7, 30]
+
+  const now = Math.floor(luxon.DateTime.utc().toSeconds())
+  const dayId = Math.floor(now / 86400)
+
+  for (let numDays of days) {
+    const startDate = (dayId - numDays) * 86400
+    const endDate = dayId * 86400
+
+    for (let chain of chains) {
+      for (let token of tokens) {
+        let price = 1
+        if (!['USDC', 'USDT', 'DAI'].includes(token)) {
+          const dates = prices[token].reverse().map(x => x[0])
+          const nearest = nearestDate(dates, startDate * 1000)
+          price = prices[token][nearest][1]
+        }
+
+        const items = await fetchDailyVolume(chain, token, startDate, endDate)
+        const amount = sumAmounts(items)
+        const decimals = tokenDecimals[token]
+        const fmt = ethers.utils.formatUnits(amount, decimals)
+        const formattedAmount = formatCurrency(fmt, token)
+        const usdAmount = formatCurrency(price * Number(fmt))
+        console.log(`last ${numDays} day(s) ${chain} ${token} ${formattedAmount} (${usdAmount})`)
+      }
+    }
+  }
+}
+
+async function runPoller() {
   const fetchInterval = 10 * 1000
   while (true) {
     try {
@@ -175,6 +285,11 @@ async function main () {
       console.error(err)
     }
   }
+}
+
+async function main () {
+  runPoller()
+  logDailyVolumes()
 }
 
 main()
