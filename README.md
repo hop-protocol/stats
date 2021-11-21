@@ -1,5 +1,5 @@
-# Hop Volume
+# Hop Volume Stats
 
-> A simple page that displays Hop total volume with data from [TheGraph](https://github.com/hop-protocol/subgraph).
+> A simple page that displays Hop volume
 
 [https://volume.hop.exchange/](https://volume.hop.exchange/)

@@ -212,7 +212,7 @@ async function poll () {
 function sumAmounts(items) {
   let sum = ethers.BigNumber.from(0)
   for (let item of items) {
-    amount = ethers.BigNumber.from(item.amount)
+    const amount = ethers.BigNumber.from(item.amount)
     sum = sum.add(amount)
   }
   return sum
