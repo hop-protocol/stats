@@ -1,5 +1,5 @@
-# Hop Volume Stats
+# Hop Stats
 
-> A simple page that displays Hop volume
+> A simple page that displays Hop stats
 
-[https://volume.hop.exchange/](https://volume.hop.exchange/)
+[https://stats.hop.exchange/](https://stats.hop.exchange/)
