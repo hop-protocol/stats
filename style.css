@@ -18,3 +18,20 @@ body {
   align-items: center;
   height: 100%;
 }
+h1 {
+  font-size: 4rem;
+  margin-bottom: 2rem;
+}
+.linksContainer {
+  padding: 1rem;
+}
+.links a {
+  display: block;
+  font-size: 3rem;
+  margin-bottom: 1rem;
+  color: #d36bc9;
+  text-decoration: none;
+}
+.links a:hover {
+  color: #bd60b4;
+}
